@@ -17,14 +17,6 @@
 ;; A sentence is whatever exists between two '/' separation characters in the
 ;; CleverScript file.
 (struct sentence (lst)
-        #:methods gen:custom-write
-        [(define (write-proc sentence port mode)
-           (define lst (sentence-lst sentence))
-           (for-each (λ (x)
-                        (show "~a\n" (to-string x) port))
-                     lst))
-         (define (show fmt str port)
-           (fprintf port fmt str))]
         #:methods gen:combinable
         [(define (find-combos s) (stringify (sentence-lst s)))])
 
@@ -38,7 +30,7 @@
              (andmap (λ (x) (string? x)) (phrase-lst phr)))
            (cond 
              [(all-strings? p) (flatten (phrase-lst p))]
-             [else (apply append (map super-combos (phrase-lst p)))]))])
+             [else (flatten (map super-combos (phrase-lst p)))]))])
 
 ;; Sentence-lst input only. This function turns a list of phrases, sentences
 ;; and strings into an equivalent list of strings.
@@ -63,12 +55,18 @@
             (find-combos (car lst)) 
             (find-combos (sentence (cdr lst))))]))
 
-;; stringify sentence then join the resulting list of strings with newlines.
- (define/match (to-string elem)
-   [(string) elem]
-   [(phrase) (flatten (phrase-lst elem))]
-   [(sentence) (string-join (stringify sentence) "\n")])
+;; Output a list of strings to file.
+(define (print-language-model lst filename)
+  (define (lst-to-string lst)
+    (string-join lst "\n"
+                 #:after-last "\n"))
+  (call-with-output-file filename
+                         #:exists 'truncate
+                         (lambda (out)
+                           (display (lst-to-string lst) out))))
 
+;; Get a phrase from the phrase table.
+(define (get-phrase str) (hash-ref phrase-ht (string->symbol str)))
 
 ;; phrase	town		city / town / village / hamlet / suburb / burb 
 ;; / farming ((town)) / little ((town))					
@@ -87,22 +85,22 @@
 (define phrase-ht
   ;; Phrase definitions to reduce verbosity of phrase-ht (test values).
   (hash 
-    'guys (sentence '("men" "guys" "dudes" "boys")) ;; Entry in hash table
-    'girls (sentence '("girls" "ladies" "dames" "broads" "gals" "women"))
+    'guys (phrase (list "men" "guys" "dudes" "boys")) ;; Entry in hash table
+    'girls (phrase (list "girls" "ladies" "dames" "broads" "gals" "women"))
     ;; this ((town)) / our ((town)) / my ((town)) / this ((spot)) / my ((spot)) 
     ;; / our ((spot)) / where we are / here
-    'currentcity (sentence (list (sentence (list "this" town))
-                             (sentence (list "our" town))
-                             (sentence (list "my" town))
-                             (sentence (list "this" spot))
-                             (sentence (list "my" spot))
-                             (sentence (list "our" spot))
+    'currentcity (phrase (list (sentence (list "this " town))
+                             (sentence (list "our " town))
+                             (sentence (list "my " town))
+                             (sentence (list "this " spot))
+                             (sentence (list "my " spot))
+                             (sentence (list "our " spot))
                              "where we are"
                              "here"))
-    'town (sentence (list "city" "town" "village" "hamlet" "suburb" "burb"
-                      (sentence (list "farming" town))
-                      (sentence (list "little" town))))
-    'spot (sentence (list "place" "spot" "location" "area" "land" "part"))))
+    'town (phrase (list "city" "town" "village" "hamlet" "suburb" "burb"
+                      (sentence (list "farming " town))
+                      (sentence (list "little " town))))
+    'spot (phrase (list "place" "spot" "location" "area" "land" "part"))))
 
 ;; Test sub-module. Run with "raco test generator.rkt"
 (module+ test
@@ -129,15 +127,15 @@
   ;; ((you're)) in the ((car)).
   ;; you're: You are / you're / hitchBOT ((you're))
   ;; car: car / jeep / van
-  (check-expect 
-    (find-combos 
-      (sentence 
-        (list (phrase (list "You are " 
-                            "you're " 
-                            (sentence 
-                              (list "hitchBOT " 
-                                    (phrase (list "You are " "you're ")))))) 
-              "in the " (phrase (list "car" "jeep" "van")))))
+  (define test-sentence 
+    (sentence 
+      (list (phrase (list "You are " 
+                          "you're " 
+                          (sentence 
+                            (list "hitchBOT " 
+                                  (phrase (list "You are " "you're ")))))) 
+            "in the " (phrase (list "car" "jeep" "van")))))
+  (check-expect (find-combos test-sentence)
                 (list "You are in the car" "You are in the jeep"
                       "You are in the van" "you're in the car" 
                       "you're in the jeep" "you're in the van"
@@ -147,4 +145,5 @@
                       "hitchBOT you're in the car" 
                       "hitchBOT you're in the jeep"
                       "hitchBOT you're in the van"))
+  (print-language-model (find-combos test-sentence) "test-output")
   (test))
