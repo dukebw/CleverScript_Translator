@@ -61,10 +61,22 @@
                   (string-downcase (list-ref between-tabs 1))))
   (cons label (map zip text-lsts phrases-lsts)))
 
+;; Map a value (list of lists of strings or string-only phrases) to a phrase.
+(define (value->phrase value)
+  (define (translate-list lst)
+    (define (lst-o-lsts->phrase list-of-lists)
+      (phrase (map sentence list-of-lists)))
+    (define (selective-phrase elem)
+      (cond 
+        [(list? elem) (lst-o-lsts->phrase elem)]
+        [else elem]))
+    (cond [(andmap string? lst) (sentence lst)]
+          [else (sentence (map selective-phrase lst))]))
+  (phrase (map translate-list value)))
+
 ;; Map the labels in a phrase hash-table to a phrase structure (string list).
 (define (translate-phrases ht)
   (define (phrase->strings symb)
-    ;; Something is buggy in here somewhere (trying to hash-ref 'Sorry)
     (map (λ (x) (filter string? x)) (hash-ref ht symb)))
   (define (picky-phrase->strings maybe-str)
     (cond 
@@ -74,8 +86,9 @@
     (hash-map ht 
               (λ (key value) 
                  (cons key 
-                       (map (λ (lst) (map picky-phrase->strings lst)) 
-                            value))))))
+                       (value->phrase
+                         (map (λ (lst) (map picky-phrase->strings lst)) 
+                            value)))))))
 
 ;; Parses file "filename" and returns all phrases in hash-table phrase-ht.
 (define (make-phrase-ht filename)
@@ -92,4 +105,4 @@
       (define in (open-input-file filename))
       (define phrase-ht (make-raw-ht-iter #hash() in))
       (close-input-port in)
-      phrase-ht))
+      (translate-phrases phrase-ht)))
