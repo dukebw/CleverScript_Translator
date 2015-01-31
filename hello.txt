@@ -255,7 +255,7 @@ phrase	chances		odds / chances / likelihood / prospect / prospects / possibility
 phrase	success		getting to Victoria / getting to your destination / making it / surviving / success / succeeding					
 phrase	newfriends		new friends / new ((humans)) / ((humans)) / friends / making friends / making friends with ((humans))				40	
 phrase	favdrink		favourite ((drink)) / what ((drink)) do you like / what ((drink))s do you like / favourite ((drink))s / ((preferred)) ((drink)) / ((preferred)) ((drink))s				40	
-phrase	go_on		tell me more / go on / continue / keep going / keep talking / ((could)) you ((go_on) / please ((go_on)) / what do you mean(??) / what(??)				40	
+phrase	go_on		tell me more / go on / continue / keep going / keep talking / ((could)) you ((go_on))/ please ((go_on)) / what do you mean(??) / what(??)				40	
 phrase	drink		drink / beer / water / alcohol / wine / ale / gin / cider / milk				40	
 phrase	lily_beaul		lily / lily beaul / lily anne beaul				40	
 phrase	david_smith		david / david smith / david harris smith				40	
