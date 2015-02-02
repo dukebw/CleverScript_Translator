@@ -13,7 +13,7 @@
                              [else ""]))
     (string-join
       (map (λ (str) (string-normalize-spaces str))
-           (take lst take-num))
+           (take (shuffle lst) take-num))
       "\n"
       #:after-last after-last))
 
